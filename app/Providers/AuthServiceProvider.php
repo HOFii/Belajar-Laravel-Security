@@ -25,7 +25,8 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+        Todo::class => TodoPolicy::class,
+        User::class => UserPolicy::class
     ];
 
     /**
@@ -51,12 +52,12 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define("delete-contact", function (User $user, Contact $contact) {
             return $user->id == $contact->user_id;
         });
-        // Gate::define("create-contact", function (User $user) {
-        //     if ($user->name == "admin") {
-        //         return Response::allow();
-        //     } else {
-        //         return Response::deny("You are not admin");
-        //     }
-        // });
+        Gate::define("create-contact", function (User $user) {
+            if ($user->name == "admin") {
+                return Response::allow();
+            } else {
+                return Response::deny("You are not admin");
+            }
+        });
     }
 }

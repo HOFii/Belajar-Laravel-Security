@@ -471,6 +471,8 @@ Saat menggunakan `Auth::attempt()`, jika sukses, secara otomatis `Auth::login()`
 
 -   Tidak ada.
 
+---
+
 ### KESIMPULAN
 
 -   Laravel menyediakan berbagai fitur keamanan bawaan untuk membantu pengembang melindungi aplikasi mereka dari berbagai ancaman umum. Framework ini secara otomatis melindungi aplikasi dari serangan CSRF (Cross-Site Request Forgery) dengan token CSRF pada setiap permintaan yang memerlukan autentikasi. Selain itu, Laravel juga melindungi aplikasi dari serangan XSS (Cross-Site Scripting) dengan meng-escape output secara default dan dari serangan SQL Injection dengan binding parameter pada query database menggunakan Eloquent ORM.

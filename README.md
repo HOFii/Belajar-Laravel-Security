@@ -47,7 +47,7 @@
 
 -   Laravel Breeze membuat halamannya menggunakan `Blaze Template`, dan menggunakan library `Tailwind CSS` untuk library CSS nya.
 
--   Dokumentasi: https://laravel.com/docs/11.x/starter-kits#laravel-breeze
+-   Dokumentasi: [Breeze](https://laravel.com/docs/11.x/starter-kits#laravel-breeze)
 
 -   Gunakan perintah `composer require laravel/breeze=v1.26.2 --dev` untuk menambahkan _library_ breeze ke project Laravel,
 
@@ -213,7 +213,7 @@ Saat menggunakan `Auth::attempt()`, jika sukses, secara otomatis `Auth::login()`
 
 -   Pengaturan _hash_ bisa dilakukan di file `config/hashing.php`.
 
--   Dokumentasi: https://laravel.com/api/10.x/Illuminate/Support/Facades/Hash.html
+-   Dokumentasi: [HashFacade](https://laravel.com/api/10.x/Illuminate/Support/Facades/Hash.html)
 
 -   Kode Has Test
 
@@ -401,7 +401,7 @@ Saat menggunakan `Auth::attempt()`, jika sukses, secara otomatis `Auth::login()`
 
 -   UserProvider biasanya digunakan oleh Guard untuk mengambil informasi User
 
--   Dokumentasi: https://laravel.com/api/10.x/Illuminate/Contracts/Auth/UserProvider.html
+-   Dokumentasi: [UserProvider](https://laravel.com/api/10.x/Illuminate/Contracts/Auth/UserProvider.html)
 
 -   Kode Simple User Provider
 

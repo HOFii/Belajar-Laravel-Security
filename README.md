@@ -464,6 +464,262 @@ Saat menggunakan `Auth::attempt()`, jika sukses, secara otomatis `Auth::login()`
             ->assertSeeText("Hello akbar");
     }
     ```
+---
+
+### 11. Authorization
+
+-   Authorization adalah proses pengecekan hak akses terhadap aksi,
+
+-   Contohnya, ada user yang hanya bisa melihat data, dan tidak bisa melakukan update dan hapus, hal ini bisa dilakukan dengan menambahkan proses Authorization.
+
+-   Laravel memliki dua cara untuk melakukan Authorization, Gates dan Policies,
+
+-   Gates, itu seperti Routes, simpel dan berbasis closure,
+
+-   Policies, itu seperti _controller_, kumpulan logic model dan resource.
+
+---
+
+### 12. Gates
+
+-   Gate Facade Method
+    ![gates](img/gates.png)
+
+-   Gates dan closure sederhana untuk menentukan apakah user punya akses untuk aksi tertentu,
+
+-   Dokumentasi: [Gates](https://laravel.com/api/10.x/Illuminate/Support/Facades/Gate.html)
+
+-   Contohnya, kita akan membuat model _Contact_, dimana _Contact_ dimiliki user,
+
+-   Disini akan coba membuat Gate untuk menentukan apakah user bisa mengubah data _Contact_ atau tidak.
+
+-   Kode Contact Migration
+
+    ```PHP
+    public function up(): void
+    {
+        Schema::create('contacts', function (Blueprint $table) {
+            $table->id();
+            $table->string("name", 100)->nullable(false);
+            $table->string("email", 100)->nullable();
+            $table->string("phone", 20)->nullable();
+            $table->string("address", 200)->nullable();
+            $table->unsignedBigInteger("user_id")->nullable(false);
+            $table->foreign("user_id")->references("id")->on("users");
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('contacts');
+    }
+    ```
+
+-   Kode Contact Model
+
+    ```PHP
+    class Contact extends Model
+    {
+        protected $table = "contacts";
+
+        public function user(): BelongsTo
+        {
+            return $this->belongsTo(User::class, "user_id", "id", "users");
+        }
+    }
+    ```
+
+-   Kode User Model
+
+    ```PHP
+     public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class, "user_id", "id");
+    }
+    ```
+
+-   Kode Gate
+
+    ```PHP
+    Gate::define("get-contact", function (User $user, Contact $contact) {
+            return $user->id == $contact->user_id;
+        });
+        Gate::define("update-contact", function (User $user, Contact $contact) {
+            return $user->id == $contact->user_id;
+        });
+        Gate::define("delete-contact", function (User $user, Contact $contact) {
+            return $user->id == $contact->user_id;
+        });
+        Gate::define("create-contact", function (User $user) {
+            if ($user->name == "admin") {
+                return Response::allow();
+            } else {
+                return Response::deny("You are not admin");
+            }
+        });
+    ```
+
+-   Kode Contact Seeder
+
+    ```PHP
+    public function run(): void
+    {
+        $user = User::where("email", "gusti@localhost")->firstOrFail();
+
+        $contact = new Contact();
+        $contact->name = "Test Contact";
+        $contact->email = "test@localhost";
+        $contact->user_id = $user->id;
+        $contact->save();
+    }
+    ```
+
+-   Kode Test Gate
+
+    ```PHP
+    public function testGate()
+    {
+        $this->seed([UserSeeder::class, ContactSeeder::class]);
+
+        $user = User::where("email", "gusti@localhost")->firstOrFail();
+        Auth::login($user);
+
+        $contact = Contact::where("email", "test@localhost")->firstOrFail();
+
+        // method allows() pada Gate Facade digunakan untuk mengecek apakah user memiliki akses atau tidak, true jika memiliki akses dan false jika tidak memiliki akses
+        self::assertTrue(Gate::allows("get-contact", $contact));
+        self::assertTrue(Gate::allows("update-contact", $contact));
+        self::assertTrue(Gate::allows("delete-contact", $contact));
+    }
+    ```
+
+-   Kode Test Gate Method
+
+    ```PHP
+    public function testGateMethod()
+    {
+        $this->seed([UserSeeder::class, ContactSeeder::class]);
+
+        $user = User::where("email", "gusti@localhost")->firstOrFail();
+        Auth::login($user);
+
+        $contact = Contact::where("email", "test@localhost")->firstOrFail();
+
+        self::assertTrue(Gate::allows("get-contact", $contact));
+        self::assertTrue(Gate::allows("update-contact", $contact));
+        self::assertTrue(Gate::allows("delete-contact", $contact));
+
+        // any(), mengecek apakah user diperbolehkan di salah satu role
+        self::assertTrue(Gate::any(["get-contact", "update-contact", "delete-contact"], $contact));
+
+        // none(), mengecek apakah user tidak diperbolehkan di semua role
+        self::assertFalse(Gate::none(["get-contact", "update-contact", "delete-contact"], $contact));
+    }
+    ```
+
+---
+
+### 13. Policies
+
+-   Policies adalah class yang berisikan authorization logic terhadap model atau resource Menggunakan Policies akan lebih rapi dibanding menggunakan Gate,
+
+-   Kita bisa membuat policy menggunakan perintah: `php artisan make:policy NamaPolicy`,
+
+-Atau jika ingin membuat policy untuk sebuah Model, kita bisa gunakan perintah : `php artisan make:policy NamaPolicy --model=NamaModel`,
+
+-   Setelah selesai membuat Policy, kita harus meregistrasikan Policy tersebut ke AuthService Provider pada bagian attribute policies.
+
+-   Kode Todo Migration
+
+    ```PHP
+    public function up(): void
+    {
+        Schema::create('todos', function (Blueprint $table) {
+            $table->id();
+            $table->string("title", 100)->nullable(false);
+            $table->string("description", 200)->nullable();
+            $table->unsignedBigInteger("user_id")->nullable(false);
+            $table->softDeletes();
+            $table->timestamps();
+            $table->foreign("user_id")->references("id")->on("users");
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('todos');
+    }
+    ```
+
+-   Kode Todo, User Model
+
+    ```PHP
+    // kode todo
+    class Todo extends Model
+    {
+        use SoftDeletes;
+
+        protected $table = "todos";
+
+        public function user(): BelongsTo
+        {
+            return $this->belongsTo(User::class, "user_id", "id", "users");
+        }
+    }
+
+    // kode user
+    public function todos(): HasMany
+    {
+        return $this->hasMany(Todo::class, "user_id", "id");
+    }
+    ```
+
+-   Gunakan perintah: `php artisan make:policy TodoPolicy --model=Todo`.
+
+-   Nantinya Laravel akan secara otomatis membuat foli baru di `app/Policies/TodoPolicy.php`.
+
+-   Kode Registrasi Policy
+
+    ```PHP
+     protected $policies = [
+        Todo::class => TodoPolicy::class
+    ];
+    ```
+
+-   Kode Todo Seeder
+
+    ```PHP
+     public function run(): void
+    {
+        $user = User::where("email", "gusti@localhost")->firstOrFail();
+
+        $todo = new Todo();
+        $todo->title = "Test Todo";
+        $todo->description = "Test Todo Description";
+        $todo->user_id = $user->id;
+        $todo->save();
+    }
+    ```
+
+-   Kode Policy Test
+
+    ```PHP
+    public function testPolicy()
+    {
+        $this->seed([UserSeeder::class, TodoSeeder::class]);
+
+        $user = User::where("email", "gusti@localhost")->firstOrFail();
+        Auth::login($user);
+
+        $todo = Todo::first();
+
+        self::assertTrue(Gate::allows("view", $todo));
+        self::assertTrue(Gate::allows("update", $todo));
+        self::assertTrue(Gate::allows("delete", $todo));
+        self::assertTrue(Gate::allows("create", Todo::class));
+    }
+    ```
 
 ---
 
